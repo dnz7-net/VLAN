@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Interativo de VLANs: TAG, UNTAG & VLAN Nativa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 280px;
+            max-height: 380px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 320px;
+            }
+        }
+        /* Custom scrollbar for CLI boxes */
+        pre::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        pre::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col font-sans overflow-x-hidden">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🔀</span>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight text-slate-100">VLAN Tagging Lab</h1>
+                        <p class="text-xs text-sky-400">IEEE 802.1Q: TAG, UNTAG &amp; VLAN Nativa</p>
+                    </div>
+                </div>
+                <!-- Nav Tabs -->
+                <nav class="hidden md:flex space-x-1" id="nav-tabs">
+                    <button onclick="switchTab('overview')" id="tab-btn-overview" class="tab-btn px-3 py-2 rounded-md text-sm font-medium bg-sky-600 text-white transition">Visão Geral &amp; Analogia</button>
+                    <button onclick="switchTab('simulator')" id="tab-btn-simulator" class="tab-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">Simulador de Pacotes</button>
+                    <button onclick="switchTab('technical')" id="tab-btn-technical" class="tab-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">Regras de Ingress/Egress</button>
+                    <button onclick="switchTab('commands')" id="tab-btn-commands" class="tab-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">Sintaxe por Fabricante</button>
+                    <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="tab-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">Quiz &amp; Casos Reais</button>
+                </nav>
+            </div>
+        </div>
+        <!-- Mobile Nav Bar -->
+        <div class="md:hidden flex overflow-x-auto border-t border-slate-800 bg-slate-950 px-2 py-2 space-x-2 text-xs">
+            <button onclick="switchTab('overview')" id="mtab-btn-overview" class="mtab-btn px-3 py-1.5 rounded whitespace-nowrap bg-sky-600 text-white">Visão Geral</button>
+            <button onclick="switchTab('simulator')" id="mtab-btn-simulator" class="mtab-btn px-3 py-1.5 rounded whitespace-nowrap text-slate-300 bg-slate-800">Simulador</button>
+            <button onclick="switchTab('technical')" id="mtab-btn-technical" class="mtab-btn px-3 py-1.5 rounded whitespace-nowrap text-slate-300 bg-slate-800">Regras Ingress/Egress</button>
+            <button onclick="switchTab('commands')" id="mtab-btn-commands" class="mtab-btn px-3 py-1.5 rounded whitespace-nowrap text-slate-300 bg-slate-800">Comandos CLI</button>
+            <button onclick="switchTab('quiz')" id="mtab-btn-quiz" class="mtab-btn px-3 py-1.5 rounded whitespace-nowrap text-slate-300 bg-slate-800">Quiz</button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- TAB 1: VISÃO GERAL & ANALOGIA -->
+        <section id="pane-overview" class="tab-pane space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Entendendo a Segmentação de Redes (IEEE 802.1Q)</h2>
+                <p class="text-slate-600 leading-relaxed">
+                    O padrão IEEE 802.1Q define como um único switch físico pode isolar o tráfego em múltiplas redes locais virtuais (VLANs). Para garantir que os dados cheguem ao destino correto sem se misturar, o switch aplica conceitos fundamentais de tratamento de porta: <strong class="text-emerald-600">UNTAG (Acesso)</strong>, <strong class="text-sky-600">TAG (Trunk)</strong> e a <strong class="text-amber-600">VLAN Nativa</strong>.
+                </p>
+            </div>
+
+            <!-- Key Metric Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">Porta UNTAG</span>
+                        <span class="text-xl">💻</span>
+                    </div>
+                    <div class="text-xl font-bold text-emerald-950">Porta de Acesso</div>
+                    <p class="text-xs text-emerald-700 mt-1">Conecta computadores e impressoras. Transmite dados <strong>limpos (sem tag)</strong>.</p>
+                </div>
+
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-sky-800">Porta TAG</span>
+                        <span class="text-xl">🏷️</span>
+                    </div>
+                    <div class="text-xl font-bold text-sky-950">Porta Trunk</div>
+                    <p class="text-xs text-sky-700 mt-1">Interconecta Switches e Roteadores. Mantém a <strong>etiqueta 802.1Q</strong> no cabeçalho.</p>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-800">VLAN Nativa</span>
+                        <span class="text-xl">⚡</span>
+                    </div>
+                    <div class="text-xl font-bold text-amber-950">Exceção no Trunk</div>
+                    <p class="text-xs text-amber-700 mt-1">VLAN especial que trafega <strong>sem etiqueta</strong> dentro de um link Trunk.</p>
+                </div>
+
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-800">Cabeçalho 802.1Q</span>
+                        <span class="text-xl">📊</span>
+                    </div>
+                    <div class="text-xl font-bold text-indigo-950">+4 Bytes Overhead</div>
+                    <p class="text-xs text-indigo-700 mt-1">Insere TPID (0x8100), Prioridade (PCP) e o VLAN ID (1 a 4094).</p>
+                </div>
+            </div>
+
+            <!-- Ethernet Frame Anatomy Section -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                        <span>📦</span>
+                        <span>Anatomia do Pacote: Onde a TAG é inserida?</span>
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-1">Veja como o cabeçalho IEEE 802.1Q altera a estrutura padrão de um quadro Ethernet, abrindo espaço para inserir <strong>4 bytes</strong> de identificação (a "etiqueta") logo após os endereços MAC e antes do EtherType.</p>
+                </div>
+
+                <div class="space-y-6 pt-2 overflow-x-auto pb-4 custom-scrollbar">
+                    <!-- Normal Frame -->
+                    <div class="min-w-[750px]">
+                        <h4 class="text-xs font-bold uppercase text-slate-500 mb-2 flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-slate-400 mr-2"></span> 
+                            1. Quadro Ethernet Padrão (Sem Tag / UNTAGGED)
+                        </h4>
+                        <div class="flex text-center text-xs font-mono text-white rounded-md overflow-hidden shadow-sm border border-slate-300">
+                            <div class="bg-slate-400 p-2.5 w-20 border-r border-slate-500/30 truncate" title="Preamble / SFD (8 Bytes)">Preamble</div>
+                            <div class="bg-slate-600 p-2.5 w-32 border-r border-slate-700/30 truncate" title="Destination MAC (6 Bytes)">Dest MAC</div>
+                            <div class="bg-slate-700 p-2.5 w-32 border-r border-slate-800/30 truncate" title="Source MAC (6 Bytes)">Src MAC</div>
+                            <div class="bg-emerald-600 p-2.5 w-24 border-r border-emerald-700/30 truncate" title="EtherType / Length (2 Bytes)">Type (IPv4)</div>
+                            <div class="bg-slate-800 p-2.5 flex-1 border-r border-slate-900/30 truncate" title="Payload / Dados (46 - 1500 Bytes)">Payload (Dados, IP, TCP...)</div>
+                            <div class="bg-slate-500 p-2.5 w-20 truncate" title="Frame Check Sequence (4 Bytes)">FCS</div>
+                        </div>
+                    </div>
+
+                    <!-- Tagged Frame -->
+                    <div class="min-w-[750px]">
+                        <h4 class="text-xs font-bold uppercase text-sky-600 mb-2 flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-sky-500 mr-2"></span> 
+                            2. Quadro com Etiqueta (TAGGED / 802.1Q)
+                        </h4>
+                        <div class="flex text-center text-xs font-mono text-white rounded-md overflow-hidden shadow-sm border border-sky-300 ring-2 ring-sky-100">
+                            <div class="bg-slate-400 p-2.5 w-20 border-r border-slate-500/30 truncate text-slate-200">Preamble</div>
+                            <div class="bg-slate-600 p-2.5 w-32 border-r border-slate-700/30 truncate text-slate-200">Dest MAC</div>
+                            <div class="bg-slate-700 p-2.5 w-32 border-r border-slate-800/30 truncate text-slate-200">Src MAC</div>
+                            <!-- 802.1Q Tag -->
+                            <div class="bg-sky-500 p-2.5 w-32 border-r border-sky-600/30 font-bold relative group" title="IEEE 802.1Q Tag (4 Bytes)">
+                                802.1Q TAG
+                                <!-- Small pulse indicator -->
+                                <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                                </span>
+                            </div>
+                            <div class="bg-emerald-600 p-2.5 w-24 border-r border-emerald-700/30 truncate text-slate-200">Type (IPv4)</div>
+                            <div class="bg-slate-800 p-2.5 flex-1 border-r border-slate-900/30 truncate text-slate-200">Payload (Dados, IP, TCP...)</div>
+                            <div class="bg-slate-500 p-2.5 w-20 truncate text-slate-200">FCS</div>
+                        </div>
+                        <!-- Breakdown of the 4 bytes -->
+                        <div class="flex mt-2 ml-[245px] text-xs text-sky-700">
+                            <div class="w-32 text-[10px] leading-tight border-l-2 border-sky-300 pl-2 text-left">
+                                <strong>+ 4 Bytes Inseridos:</strong><br>
+                                <span class="text-slate-500">TPID (0x8100)</span><br>
+                                <span class="text-slate-500">Prioridade QoS</span><br>
+                                <strong>VLAN ID (1-4094)</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analogy Section -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                        <span>📮</span>
+                        <span>A Analogia do Agente de Correios</span>
+                    </h3>
+                    <p class="text-sm text-slate-500 mt-1">Para fixar o funcionamento sem complicação, imagine que os pacotes de dados são cartas e os Switches são centrais de triagem dos Correios.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2 text-emerald-700 font-bold mb-2">
+                                <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded">UNTAG</span>
+                                <h4>Carta do Destinatário (PC)</h4>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Você envia uma carta normal na caixa de correio local. A carta não tem etiquetas internas de triagem. Quando o carteiro entrega na sua casa, você recebe o envelope limpo. O dispositivo final (seu PC) só lê a mensagem.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-200 text-xs font-medium text-slate-500">
+                             Dispositivo final não precisa entender VLANs.
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2 text-sky-700 font-bold mb-2">
+                                <span class="bg-sky-100 text-sky-800 text-xs px-2 py-0.5 rounded">TAG</span>
+                                <h4>Malote do Caminhão (Trunk)</h4>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Para transportar cartas de vários departamentos (Financeiro, RH, Vendas) entre duas cidades, as centrais colocam cada lote dentro de malotes etiquetados ("Malote VLAN 10", "Malote VLAN 20"). O motorista do caminhão (porta Trunk) lê a etiqueta para saber onde descarregar.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-200 text-xs font-medium text-slate-500">
+                             Várias redes no mesmo cabo físico com identificador.
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2 text-amber-700 font-bold mb-2">
+                                <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded">Nativa</span>
+                                <h4>Carta Solta no Caminhão</h4>
+                            </div>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Se uma carta for jogada solta dentro do caminhão de transporte sem malote ou etiqueta nenhuma, os correios combinam uma regra: <em>"Tudo o que chegar sem etiqueta deve ser jogado na caixa da Recepção Geral (VLAN Nativa)"</em>.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-200 text-xs font-medium text-slate-500">
+                             Usada para protocolos de gerenciamento e compatibilidade.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SIMULADOR DE PACOTES (CANVAS) -->
+        <section id="pane-simulator" class="tab-pane hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Simulador Interativo de Fluxo de Pacotes 802.1Q</h2>
+                <p class="text-slate-600 leading-relaxed">
+                    Escolha o dispositivo de origem e o pacote emitido para acompanhar visualmente em tempo real como os Switches adicionam, leiem, mantêm ou removem a etiqueta IEEE 802.1Q à medida que o tráfego passa por portas de Acesso (UNTAG), conexões Trunk (TAG) e pela VLAN Nativa.
+                </p>
+            </div>
+
+            <!-- Simulator Control Panel & Canvas Container -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <!-- Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 mb-1">1. Origem do Pacote:</label>
+                        <select id="sim-source" onchange="resetSimulation()" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                            <option value="pcA">PC A (VLAN 10 - Financeiro)</option>
+                            <option value="pcB">PC B (VLAN 20 - Visitantes)</option>
+                            <option value="pcUnmanaged">Dispositivo sem Tag (VLAN Nativa 99)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-700 mb-1">2. Destino Solicitado:</label>
+                        <select id="sim-target" onchange="resetSimulation()" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                            <option value="pcC">PC C (VLAN 10 - Switch 2)</option>
+                            <option value="pcD">PC D (VLAN 20 - Switch 2)</option>
+                            <option value="pcNative">Servidor Gestão (VLAN Nativa 99)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-end space-x-2">
+                        <button onclick="startSimulation()" id="sim-start-btn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition text-sm flex items-center justify-center space-x-1">
+                            <span>▶</span>
+                            <span>Iniciar Animação</span>
+                        </button>
+                        <button onclick="resetSimulation()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-md transition text-sm">
+                            ↺ Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas Visualizer -->
+                <div class="relative w-full bg-slate-900 rounded-xl overflow-hidden shadow-inner p-2 border border-slate-800">
+                    <canvas id="simCanvas" width="900" height="340" class="w-full h-auto block"></canvas>
+                </div>
+
+                <!-- Real-time Inspection Panel -->
+                <div class="bg-slate-900 text-slate-100 rounded-lg p-4 border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-xs font-bold uppercase text-sky-400 tracking-wider"> Inspeção do Cabeçalho do Quadro Ethernet em Tempo Real</span>
+                        <span id="sim-step-badge" class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">Status: Aguardando Início</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Posição Atual no Enlace:</span>
+                            <span id="sim-info-pos" class="font-semibold text-white">Nenhum pacote em trânsito</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Estado do Tag IEEE 802.1Q:</span>
+                            <span id="sim-info-tag" class="font-mono text-emerald-400 font-bold">Sem Tag (Ethernet Padrão)</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Ação Executada pelo Switch:</span>
+                            <span id="sim-info-action" class="text-slate-300">Aguardando comando do usuário.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: REGRAS TÉCNICAS INGRESS/EGRESS -->
+        <section id="pane-technical" class="tab-pane hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Mecanismo Interno: Ingress, Egress e Estrutura 802.1Q</h2>
+                <p class="text-slate-600 leading-relaxed">
+                    A tomada de decisão de um switch gerenciável acontece em dois momentos distintos: na **Entrada (Ingress)** do pacote na porta e na **Saída (Egress)** para o cabo físico. Entender esta matriz de decisões elimina erros comuns de projeto de rede.
+                </p>
+            </div>
+
+            <!-- Ingress/Egress Decision Matrix -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <h3 class="text-lg font-bold text-slate-900">Matriz de Decisão: Como o Switch Processa o Tráfego</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase text-xs">
+                                <th class="p-3 border border-slate-200">Tipo de Porta</th>
+                                <th class="p-3 border border-slate-200">Tráfego Recebido (Ingress)</th>
+                                <th class="p-3 border border-slate-200">Ação de Entrada</th>
+                                <th class="p-3 border border-slate-200">Tráfego Enviado (Egress)</th>
+                                <th class="p-3 border border-slate-200">Ação de Saída</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-bold text-emerald-700 border border-slate-200 bg-emerald-50/50">
+                                    UNTAGGED / Access
+                                </td>
+                                <td class="p-3 border border-slate-200 text-slate-600">Pacote Limpo (Sem Tag)</td>
+                                <td class="p-3 border border-slate-200 font-medium text-slate-800">
+                                    Adiciona a Tag da VLAN de Acesso (PVID) internamente na memória.
+                                </td>
+                                <td class="p-3 border border-slate-200 text-slate-600">Pacote pertencente à VLAN da porta</td>
+                                <td class="p-3 border border-slate-200 font-medium text-emerald-700">
+                                    <strong>Remove a Tag (Untag)</strong> antes de entregar ao dispositivo final.
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-bold text-sky-700 border border-slate-200 bg-sky-50/50">
+                                    TAGGED / Trunk
+                                </td>
+                                <td class="p-3 border border-slate-200 text-slate-600">Pacote com Tag 802.1Q</td>
+                                <td class="p-3 border border-slate-200 font-medium text-slate-800">
+                                    Verifica se o VID é permitido. Se sim, mantém o pacote na respetiva VLAN.
+                                </td>
+                                <td class="p-3 border border-slate-200 text-slate-600">Pacote de VLANs permitidas no Trunk</td>
+                                <td class="p-3 border border-slate-200 font-medium text-sky-700">
+                                    <strong>Mantém a Tag (Tagged)</strong> com o VID correspondente no cabeçalho.
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-bold text-amber-700 border border-slate-200 bg-amber-50/50">
+                                    VLAN Nativa (no Trunk)
+                                </td>
+                                <td class="p-3 border border-slate-200 text-slate-600">Pacote Limpo (Sem Tag) no Trunk</td>
+                                <td class="p-3 border border-slate-200 font-medium text-slate-800">
+                                    Atribui o pacote automaticamente à <strong>VLAN Nativa configurada</strong>.
+                                </td>
+                                <td class="p-3 border border-slate-200 text-slate-600">Pacote pertencente à VLAN Nativa</td>
+                                <td class="p-3 border border-slate-200 font-medium text-amber-700">
+                                    <strong>Remove a Tag (Untag)</strong> ao transmitir pelo enlace Trunk.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Frame Overhead Visual & Chart.js -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Anatomy Card -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                        <span>🧩</span>
+                        <span>Anatomia da Tag IEEE 802.1Q</span>
+                    </h3>
+                    <p class="text-xs text-slate-600">Quando uma porta insere um Tag no cabeçalho Ethernet, ela expande o quadro adicionando exatos **4 Bytes (32 bits)** entre os campos MAC Address e EtherType original:</p>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div class="p-3 bg-slate-900 text-slate-100 rounded-lg font-mono space-y-1">
+                            <div class="text-sky-400 font-bold border-b border-slate-800 pb-1">Campos do Cabeçalho 802.1Q (4 Bytes):</div>
+                            <div class="flex justify-between pt-1">
+                                <span class="text-slate-400">TPID (Tag Protocol ID):</span>
+                                <span class="text-amber-400">16 bits (0x8100)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">PCP (Priority Code Point):</span>
+                                <span class="text-emerald-400">3 bits (QoS / 802.1p)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">DEI (Drop Eligible):</span>
+                                <span class="text-purple-400">1 bit</span>
+                            </div>
+                            <div class="flex justify-between border-t border-slate-800 pt-1 font-bold">
+                                <span class="text-sky-300">VID (VLAN Identifier):</span>
+                                <span class="text-sky-300">12 bits (VLANs 1 a 4094)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart.js Chart Container -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-1">Comparativo de Tamanho de Quadro (Bytes)</h3>
+                        <p class="text-xs text-slate-500 mb-4">Impacto do Tagging no tamanho máximo do quadro Ethernet (MTU/Frame Overhead).</p>
+                    </div>
+                    
+                    <!-- Chart Wrapper -->
+                    <div class="chart-container">
+                        <canvas id="overheadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SINTAXE POR FABRICANTE (CLI) -->
+        <section id="pane-commands" class="tab-pane hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Configuração Prática nos Principais Fabricantes</h2>
+                <p class="text-slate-600 leading-relaxed">
+                    Cada sistema operacional de switch utiliza terminologias próprias para representar os conceitos de UNTAG, TAG e VLAN Nativa. Selecione o fabricante desejado para ver os comandos exatos de configuração.
+                </p>
+            </div>
+
+            <!-- Vendor Selector Tabs -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-3" id="vendor-btn-group">
+                    <button onclick="selectVendor('cisco')" id="vendor-btn-cisco" class="vendor-btn px-4 py-2 rounded-lg text-sm font-bold bg-sky-600 text-white shadow-sm transition">Cisco IOS / NX-OS</button>
+                    <button onclick="selectVendor('aruba')" id="vendor-btn-aruba" class="vendor-btn px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Aruba / HP AOS-S</button>
+                    <button onclick="selectVendor('mikrotik')" id="vendor-btn-mikrotik" class="vendor-btn px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">MikroTik RouterOS v7</button>
+                    <button onclick="selectVendor('huawei')" id="vendor-btn-huawei" class="vendor-btn px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Huawei VRP</button>
+                </div>
+
+                <!-- CLI Display Cards -->
+                <div id="vendor-content-area" class="space-y-6">
+                    <!-- Dynamic Content populated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: QUIZ & CASOS REAIS -->
+        <section id="pane-quiz" class="tab-pane hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Quiz de Fixação &amp; Cenários do Dia a Dia</h2>
+                <p class="text-slate-600 leading-relaxed">
+                    Teste seu conhecimento resolvendo desafios práticos que ocorrem em redes corporativas reais. Selecione as alternativas corretas para obter o diagnóstico imediato.
+                </p>
+            </div>
+
+            <!-- Quiz Questions Grid -->
+            <div class="space-y-6" id="quiz-container">
+                <!-- Question 1 -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <span class="text-xs font-bold uppercase text-sky-600 tracking-wider">Questão 1 de 3</span>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Dispositivos Finais</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">
+                        Um computador corporativo padrão precisa ser conectado à VLAN 10 (Financeiro). Como a porta do switch deve ser configurada para que o computador navegue sem problemas?
+                    </h3>
+                    <div class="space-y-2 text-sm" id="q1-options">
+                        <button onclick="checkAnswer(1, 'A', false)" class="q-opt-1-A w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">A)</span>
+                            <span>Como porta TAGGED na VLAN 10.</span>
+                        </button>
+                        <button onclick="checkAnswer(1, 'B', true)" class="q-opt-1-B w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">B)</span>
+                            <span>Como porta UNTAGGED (Acesso) atribuída à VLAN 10.</span>
+                        </button>
+                        <button onclick="checkAnswer(1, 'C', false)" class="q-opt-1-C w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">C)</span>
+                            <span>Como porta Trunk com a VLAN Nativa desativada.</span>
+                        </button>
+                    </div>
+                    <div id="q1-feedback" class="hidden p-4 rounded-lg text-xs leading-relaxed"></div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <span class="text-xs font-bold uppercase text-sky-600 tracking-wider">Questão 2 de 3</span>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Troubleshooting de Trunk</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">
+                        Dois switches estão interconectados por um cabo físico (Trunk). O Switch A está com VLAN Nativa 10 e o Switch B está com VLAN Nativa 20. O que acontecerá com o tráfego sem tag nessa conexão?
+                    </h3>
+                    <div class="space-y-2 text-sm" id="q2-options">
+                        <button onclick="checkAnswer(2, 'A', false)" class="q-opt-2-A w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">A)</span>
+                            <span>O tráfego passará normalmente e as VLANs serão mescladas sem alertas.</span>
+                        </button>
+                        <button onclick="checkAnswer(2, 'B', true)" class="q-opt-2-B w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">B)</span>
+                            <span>Ocorrerá vazamento de tráfego entre VLANs (VLAN Leakage) e os switches emitirão alertas de "Native VLAN Mismatch".</span>
+                        </button>
+                        <button onclick="checkAnswer(2, 'C', false)" class="q-opt-2-C w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">C)</span>
+                            <span>O switch desligará a porta fisicamente por segurança imediatamente.</span>
+                        </button>
+                    </div>
+                    <div id="q2-feedback" class="hidden p-4 rounded-lg text-xs leading-relaxed"></div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <span class="text-xs font-bold uppercase text-sky-600 tracking-wider">Questão 3 de 3</span>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Virtualização &amp; ESXi</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">
+                        Um servidor de virtualização (VMware ESXi) possui 10 máquinas virtuais divididas nas VLANs 10, 20 e 30 conectadas à mesma placa de rede física. Como a porta do switch deve ser configurada?
+                    </h3>
+                    <div class="space-y-2 text-sm" id="q3-options">
+                        <button onclick="checkAnswer(3, 'A', true)" class="q-opt-3-A w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">A)</span>
+                            <span>Como porta Trunk (TAGGED) permitindo as VLANs 10, 20 e 30.</span>
+                        </button>
+                        <button onclick="checkAnswer(3, 'B', false)" class="q-opt-3-B w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">B)</span>
+                            <span>Como porta de Acesso (UNTAGGED) na VLAN 10.</span>
+                        </button>
+                        <button onclick="checkAnswer(3, 'C', false)" class="q-opt-3-C w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition flex items-start space-x-2">
+                            <span class="font-bold text-slate-400">C)</span>
+                            <span>Servidores virtuais não conseguem utilizar VLANs na mesma placa física.</span>
+                        </button>
+                    </div>
+                    <div id="q3-feedback" class="hidden p-4 rounded-lg text-xs leading-relaxed"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-1">
+            <p>Laboratório Interativo IEEE 802.1Q - Conceitos de Redes de Computadores</p>
+            <p class="text-slate-500">Desenvolvido para ensino prático de TAG, UNTAG e VLAN Nativa.</p>
+        </div>
+    </footer>
+
+    <!-- Placeholders required by system prompt -->
+    <!-- Chosen Palette: Warm Slate & Networking Blue (Slate-900, Sky-600, Indigo-600, Emerald-600, Amber-500) -->
+    <!-- Application Structure Plan: Designed as a 5-tab thematic SPA: 1) Visão Geral & Analogia dos Correios, 2) Simulador de Pacotes Interativo com animação em Canvas 2D em tempo real, 3) Regras Técnicas de Ingress/Egress e Gráfico do Overhead 802.1Q, 4) Matriz de Comandos CLI por Fabricante (Cisco, Aruba, MikroTik, Huawei), 5) Quiz Interativo de Casos Reais. Esta arquitetura garante uma jornada de aprendizado lógica desde o conceito intuitivo até a prática de configuração de equipamentos. -->
+    <!-- Visualization & Content Choices: 
+       - Packet Flow Simulator -> Engine Canvas 2D personalizada exibindo a trajetória de pacotes, inserção de Tag no Ingress de portas de acesso, manutenção de Tag no Trunk e remoção de Tag na VLAN Nativa/Egress.
+       - Frame Overhead -> Chart.js para barras horizontais comparando tamanhos de pacotes Ethernet Padrão (1518B), 802.1Q Tagged (1522B) e QinQ Double Tagged (1526B).
+       - Sintaxe de Fabricantes -> Interface de abas dinâmicas atualizando blocos CLI com destaque de sintaxe para fácil consulta.
+       - Quiz Interativo -> Validação dinâmica com feedback imediato explicando os erros e acertos em cenários reais.
+       CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // --- TAB NAVIGATION SYSTEM ---
+        function switchTab(tabId) {
+            // Hide all tab panes
+            const panes = document.querySelectorAll('.tab-pane');
+            panes.forEach(pane => pane.classList.add('hidden'));
+
+            // Show selected tab pane
+            const activePane = document.getElementById('pane-' + tabId);
+            if (activePane) activePane.classList.remove('hidden');
+
+            // Update Desktop Nav Button Styles
+            const navBtns = document.querySelectorAll('.tab-btn');
+            navBtns.forEach(btn => {
+                btn.classList.remove('bg-sky-600', 'text-white');
+                btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800');
+            });
+
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-slate-800');
+                activeBtn.classList.add('bg-sky-600', 'text-white');
+            }
+
+            // Update Mobile Nav Button Styles
+            const mNavBtns = document.querySelectorAll('.mtab-btn');
+            mNavBtns.forEach(btn => {
+                btn.classList.remove('bg-sky-600', 'text-white');
+                btn.classList.add('text-slate-300', 'bg-slate-800');
+            });
+
+            const activeMBtn = document.getElementById('mtab-btn-' + tabId);
+            if (activeMBtn) {
+                activeMBtn.classList.remove('text-slate-300', 'bg-slate-800');
+                activeMBtn.classList.add('bg-sky-600', 'text-white');
+            }
+
+            // Trigger Canvas or Chart redraws when switching tabs
+            if (tabId === 'simulator') {
+                initCanvas();
+            } else if (tabId === 'technical') {
+                initChart();
+            }
+        }
+
+        // --- CHART.JS OVERHEAD CHART ---
+        let overheadChartInstance = null;
+        function initChart() {
+            if (overheadChartInstance) return; // Prevent duplicate initialization
+
+            const ctx = document.getElementById('overheadChart');
+            if (!ctx) return;
+
+            overheadChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        'Ethernet Normal',
+                        '802.1Q (Com Tag)',
+                        'QinQ (Double Tag)'
+                    ],
+                    datasets: [{
+                        label: 'Tamanho Máximo do Quadro (Bytes)',
+                        data: [1518, 1522, 1526],
+                        backgroundColor: [
+                            '#10b981', // Emerald
+                            '#0284c7', // Sky
+                            '#8b5cf6'  // Purple
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Tamanho: ${context.raw} Bytes (${context.raw - 1518 > 0 ? '+' + (context.raw - 1518) + 'B Overhead' : 'Sem Tag'})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            min: 1500,
+                            max: 1535,
+                            title: { display: true, text: 'Bytes no Cabo Físico' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- CANVAS PACKET FLOW SIMULATOR ENGINE ---
+        let animId = null;
+        let simProgress = 0;
+        let isRunning = false;
+
+        const nodes = {
+            pcA: { x: 90, y: 80, label: "PC A (VLAN 10)", color: "#10b981", vlan: 10 },
+            pcB: { x: 90, y: 260, label: "PC B (VLAN 20)", color: "#3b82f6", vlan: 20 },
+            pcUnmanaged: { x: 90, y: 170, label: "Dispositivo (Sem Tag)", color: "#f59e0b", vlan: 99 },
+            
+            switch1: { x: 300, y: 170, label: "Switch 1" },
+            switch2: { x: 600, y: 170, label: "Switch 2" },
+
+            pcC: { x: 810, y: 80, label: "PC C (VLAN 10)", color: "#10b981", vlan: 10 },
+            pcD: { x: 810, y: 260, label: "PC D (VLAN 20)", color: "#3b82f6", vlan: 20 },
+            pcNative: { x: 810, y: 170, label: "Servidor Nativo (VLAN 99)", color: "#f59e0b", vlan: 99 }
+        };
+
+        function drawTopology(ctx) {
+            const w = ctx.canvas.width;
+            const h = ctx.canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw Connection Cables
+            ctx.lineWidth = 3;
+            
+            // PC A to Switch 1 (Access VLAN 10)
+            ctx.strokeStyle = "#cbd5e1";
+            ctx.beginPath(); ctx.moveTo(nodes.pcA.x, nodes.pcA.y); ctx.lineTo(nodes.switch1.x, nodes.switch1.y); ctx.stroke();
+
+            // PC B to Switch 1 (Access VLAN 20)
+            ctx.beginPath(); ctx.moveTo(nodes.pcB.x, nodes.pcB.y); ctx.lineTo(nodes.switch1.x, nodes.switch1.y); ctx.stroke();
+
+            // Unmanaged to Switch 1
+            ctx.beginPath(); ctx.moveTo(nodes.pcUnmanaged.x, nodes.pcUnmanaged.y); ctx.lineTo(nodes.switch1.x, nodes.switch1.y); ctx.stroke();
+
+            // TRUNK LINK: Switch 1 to Switch 2
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(nodes.switch1.x, nodes.switch1.y); ctx.lineTo(nodes.switch2.x, nodes.switch2.y); ctx.stroke();
+
+            // Trunk Label Badge
+            ctx.fillStyle = "#0284c7";
+            ctx.fillRect(410, 145, 80, 20);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 10px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("TRUNK (TAG)", 450, 159);
+
+            // Switch 2 to PC C / D / Native
+            ctx.strokeStyle = "#cbd5e1";
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(nodes.switch2.x, nodes.switch2.y); ctx.lineTo(nodes.pcC.x, nodes.pcC.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(nodes.switch2.x, nodes.switch2.y); ctx.lineTo(nodes.pcD.x, nodes.pcD.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(nodes.switch2.x, nodes.switch2.y); ctx.lineTo(nodes.pcNative.x, nodes.pcNative.y); ctx.stroke();
+
+            // Draw End Nodes (Computers)
+            drawDeviceNode(ctx, nodes.pcA);
+            drawDeviceNode(ctx, nodes.pcB);
+            drawDeviceNode(ctx, nodes.pcUnmanaged);
+            drawDeviceNode(ctx, nodes.pcC);
+            drawDeviceNode(ctx, nodes.pcD);
+            drawDeviceNode(ctx, nodes.pcNative);
+
+            // Draw Switch Nodes
+            drawSwitchNode(ctx, nodes.switch1);
+            drawSwitchNode(ctx, nodes.switch2);
+        }
+
+        function drawDeviceNode(ctx, node) {
+            ctx.fillStyle = "#ffffff";
+            ctx.strokeStyle = node.color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = "#1e293b";
+            ctx.font = "bold 16px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("💻", node.x, node.y + 5);
+
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = "10px sans-serif";
+            ctx.fillText(node.label, node.x, node.y + 36);
+        }
+
+        function drawSwitchNode(ctx, node) {
+            ctx.fillStyle = "#0f172a";
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 2;
+            ctx.fillRect(node.x - 30, node.y - 20, 60, 40);
+            ctx.strokeRect(node.x - 30, node.y - 20, 60, 40);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 16px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🔀", node.x, node.y + 5);
+
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = "bold 11px sans-serif";
+            ctx.fillText(node.label, node.x, node.y - 26);
+        }
+
+        function initCanvas() {
+            const canvas = document.getElementById('simCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            drawTopology(ctx);
+        }
+
+        function startSimulation() {
+            if (isRunning) return;
+            isRunning = true;
+            simProgress = 0;
+
+            const sourceKey = document.getElementById('sim-source').value;
+            const targetKey = document.getElementById('sim-target').value;
+
+            const startNode = nodes[sourceKey];
+            const endNode = nodes[targetKey];
+
+            function animate() {
+                const canvas = document.getElementById('simCanvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                drawTopology(ctx);
+
+                simProgress += 0.008; // speed
+                if (simProgress > 1) simProgress = 1;
+
+                // Calculate Packet Position (3 Hop trajectory: Start -> Switch 1 -> Switch 2 -> End)
+                let px = 0, py = 0;
+                let hopStage = 1;
+
+                if (simProgress <= 0.33) {
+                    // Hop 1: Device to Switch 1
+                    hopStage = 1;
+                    const subP = simProgress / 0.33;
+                    px = startNode.x + (nodes.switch1.x - startNode.x) * subP;
+                    py = startNode.y + (nodes.switch1.y - startNode.y) * subP;
+                } else if (simProgress <= 0.66) {
+                    // Hop 2: Switch 1 to Switch 2 over Trunk
+                    hopStage = 2;
+                    const subP = (simProgress - 0.33) / 0.33;
+                    px = nodes.switch1.x + (nodes.switch2.x - nodes.switch1.x) * subP;
+                    py = nodes.switch1.y + (nodes.switch2.y - nodes.switch1.y) * subP;
+                } else {
+                    // Hop 3: Switch 2 to Target Device
+                    hopStage = 3;
+                    const subP = (simProgress - 0.66) / 0.34;
+                    px = nodes.switch2.x + (endNode.x - nodes.switch2.x) * subP;
+                    py = nodes.switch2.y + (endNode.y - nodes.switch2.y) * subP;
+                }
+
+                // Render Moving Packet Badge
+                drawPacket(ctx, px, py, hopStage, startNode);
+
+                // Update UI Text State
+                updateSimulationInspector(hopStage, startNode, endNode);
+
+                if (simProgress < 1) {
+                    animId = requestAnimationFrame(animate);
+                } else {
+                    isRunning = false;
+                }
+            }
+
+            animate();
+        }
+
+        function drawPacket(ctx, x, y, hopStage, startNode) {
+            let label = "📄 Sem Tag";
+            let bgColor = "#f59e0b";
+
+            if (hopStage === 1) {
+                // Device to Switch: Always Untagged
+                label = "📄 Ethernet Limpo";
+                bgColor = "#64748b";
+            } else if (hopStage === 2) {
+                // Over Trunk link: Check if Native or Tagged
+                if (startNode.vlan === 99) {
+                    label = "📄 Untagged (Nativa 99)";
+                    bgColor = "#f59e0b"; // Amber for Native
+                } else {
+                    label = `🏷️ Tag [VID: ${startNode.vlan}]`;
+                    bgColor = startNode.vlan === 10 ? "#0284c7" : "#2563eb"; // Blue
+                }
+            } else if (hopStage === 3) {
+                // Egress to destination device: Tag is stripped
+                label = "📄 Ethernet Limpo";
+                bgColor = "#10b981";
+            }
+
+            // Draw Packet Box
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(x - 55, y - 14, 110, 24);
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x - 55, y - 14, 110, 24);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 10px font-sans";
+            ctx.textAlign = "center";
+            ctx.fillText(label, x, y + 2);
+        }
+
+        function updateSimulationInspector(hopStage, startNode, endNode) {
+            const posEl = document.getElementById('sim-info-pos');
+            const tagEl = document.getElementById('sim-info-tag');
+            const actionEl = document.getElementById('sim-info-action');
+            const badgeEl = document.getElementById('sim-step-badge');
+
+            if (hopStage === 1) {
+                badgeEl.innerText = "Salto 1/3: Dispositivo → Switch 1";
+                posEl.innerText = "Porta de Acesso (UNTAGGED)";
+                tagEl.innerText = "Nenhuma Tag IEEE 802.1Q";
+                tagEl.className = "font-mono text-slate-400 font-bold";
+                actionEl.innerText = `O PC envia o tráfego limpo. Ao entrar no Switch 1, a porta atribui internamente a VLAN ${startNode.vlan}.`;
+            } else if (hopStage === 2) {
+                badgeEl.innerText = "Salto 2/3: Enlace Trunk entre Switches";
+                posEl.innerText = "Porta TRUNK (Link Inter-Switch)";
+
+                if (startNode.vlan === 99) {
+                    tagEl.innerText = "UNTAGGED (VLAN Nativa 99)";
+                    tagEl.className = "font-mono text-amber-400 font-bold";
+                    actionEl.innerText = "Como o tráfego pertence à VLAN Nativa (99), o Switch 1 remove/não insere a tag 802.1Q para transmiti-lo.";
+                } else {
+                    tagEl.innerText = `TAGGED [IEEE 802.1Q VID: ${startNode.vlan}]`;
+                    tagEl.className = "font-mono text-sky-400 font-bold";
+                    actionEl.innerText = `O Switch 1 adicionou a etiqueta de 4-bytes indicando VLAN ${startNode.vlan}. O Switch 2 usará essa tag para direcionar o pacote.`;
+                }
+            } else if (hopStage === 3) {
+                badgeEl.innerText = "Salto 3/3: Switch 2 → Dispositivo Destino";
+                posEl.innerText = "Porta de Acesso Egress";
+                tagEl.innerText = "Tag Removida (Entregue Limpo)";
+                tagEl.className = "font-mono text-emerald-400 font-bold";
+                actionEl.innerText = `O Switch 2 removeu a Tag antes de transmitir. O ${endNode.label} recebe um pacote Ethernet limpo e padrão.`;
+            }
+        }
+
+        function resetSimulation() {
+            if (animId) cancelAnimationFrame(animId);
+            isRunning = false;
+            simProgress = 0;
+
+            document.getElementById('sim-step-badge').innerText = "Status: Pronto";
+            document.getElementById('sim-info-pos').innerText = "Aguardando início";
+            document.getElementById('sim-info-tag').innerText = "Nenhum pacote";
+            document.getElementById('sim-info-action').innerText = "Clique em 'Iniciar Animação' para visualizar o fluxo de pacotes.";
+
+            initCanvas();
+        }
+
+        // --- VENDOR CLI COMMANDS SYSTEM ---
+        const vendorData = {
+            cisco: {
+                title: "Cisco IOS / NX-OS",
+                access: `! 1. Configurar Porta de Acesso (UNTAGGED)
+interface GigabitEthernet0/1
+ description Conexao_PC_Financeiro
+ switchport mode access
+ switchport access vlan 10
+ no shutdown`,
+                trunk: `! 2. Configurar Porta Trunk (TAGGED + VLAN Nativa)
+interface GigabitEthernet0/2
+ description Link_Switch_Core
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+ switchport trunk native vlan 99
+ no shutdown`
+            },
+            aruba: {
+                title: "Aruba / HP AOS-S (ProCurve)",
+                access: `! No Aruba/HP AOS-S, as portas sao adicionadas DENTRO da VLAN:
+vlan 10
+ name "Financeiro"
+ untagged 1/1
+ exit`,
+                trunk: `! Para Trunk no Aruba AOS-S, use TAGGED e UNTAGGED (para Nativa):
+vlan 10
+ tagged 1/2
+vlan 20
+ tagged 1/2
+vlan 99
+ name "Nativa_Mgmt"
+ untagged 1/2   ! A VLAN Untagged em um trunk atua como VLAN Nativa!`
+            },
+            mikrotik: {
+                title: "MikroTik RouterOS v7 (Bridge VLAN Filtering)",
+                access: `# 1. Configurar a porta com PVID na Bridge (Acesso/UNTAG)
+/interface bridge port
+add bridge=bridge1 interface=ether1 pvid=10
+
+# 2. Definir a tabela de VLANs da Bridge
+/interface bridge vlan
+add bridge=bridge1 vlan-ids=10 untagged=ether1`,
+                trunk: `# 1. Configurar porta Trunk com PVID da VLAN Nativa (ex: 99)
+/interface bridge port
+add bridge=bridge1 interface=ether2 pvid=99
+
+# 2. Permitir VLANs Tagged e a VLAN Nativa Untagged
+/interface bridge vlan
+add bridge=bridge1 vlan-ids=10,20 tagged=ether2
+add bridge=bridge1 vlan-ids=99 untagged=ether2`
+            },
+            huawei: {
+                title: "Huawei VRP",
+                access: `# 1. Configurar Porta de Acesso (UNTAGGED)
+interface GigabitEthernet0/0/1
+ port link-type access
+ port default vlan 10
+#`,
+                trunk: `# 2. Configurar Porta Trunk (TAGGED + Native/PVID)
+interface GigabitEthernet0/0/2
+ port link-type trunk
+ port trunk allow-pass vlan 10 20 99
+ port trunk pvid vlan 99
+#`
+            }
+        };
+
+        function selectVendor(vendorKey) {
+            // Update button tab highlights
+            const buttons = document.querySelectorAll('.vendor-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-sky-600', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            });
+
+            const activeBtn = document.getElementById('vendor-btn-' + vendorKey);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+                activeBtn.classList.add('bg-sky-600', 'text-white');
+            }
+
+            // Render CLI Syntax
+            const data = vendorData[vendorKey];
+            const contentArea = document.getElementById('vendor-content-area');
+
+            contentArea.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-900 text-slate-100 rounded-xl p-5 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span class="text-xs font-bold uppercase text-emerald-400"> Porta de Acesso (UNTAGGED) - ${data.title}</span>
+                        </div>
+                        <pre class="font-mono text-xs leading-relaxed text-emerald-300 overflow-x-auto p-2 bg-slate-950 rounded"><code>${escapeHtml(data.access)}</code></pre>
+                    </div>
+
+                    <div class="bg-slate-900 text-slate-100 rounded-xl p-5 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span class="text-xs font-bold uppercase text-sky-400"> Porta Trunk (TAGGED + Nativa) - ${data.title}</span>
+                        </div>
+                        <pre class="font-mono text-xs leading-relaxed text-sky-300 overflow-x-auto p-2 bg-slate-950 rounded"><code>${escapeHtml(data.trunk)}</code></pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // --- QUIZ INTERACTIVE SYSTEM ---
+        const quizExplanations = {
+            1: {
+                correct: " Correto! Computadores e impressoras não reconhecem cabeçalhos IEEE 802.1Q. A porta do switch deve ser configurada como UNTAGGED (Acesso) para que o switch remova o tag ao entregar o dado ao PC.",
+                incorrect: " Incorreto. Dispositivos finais normais não entendem a etiqueta 802.1Q e podem descartar os pacotes como corrompidos se a porta for configurada como Tagged."
+            },
+            2: {
+                correct: " Exatamente! Quando há divergência de VLAN Nativa entre dois switches em um link Trunk, os quadros sem tag enviados por uma VLAN serão interpretados como pertencentes à outra VLAN no switch remoto, gerando instabilidade de Spanning Tree e alertas de Mismatch.",
+                incorrect: " Incorreto. A divergência de VLAN Nativa provoca vazamento de tráfego entre redes virtuais distintas e gera alertas constantes de CDP/PVST+."
+            },
+            3: {
+                correct: " Resposta Exata! Servidores de virtualização (ESXi, Hyper-V, Proxmox) possuem um vSwitch interno capaz de entender tags 802.1Q. A porta física do switch deve ser Trunk (TAGGED) para transportar as múltiplas VLANs das máquinas virtuais.",
+                incorrect: " Incorreto. Uma porta de acesso suporta apenas uma única VLAN por cabo físico, o que isolaria as outras VMs de VLANs diferentes."
+            }
+        };
+
+        function checkAnswer(qNum, option, isCorrect) {
+            const feedbackEl = document.getElementById(`q${qNum}-feedback`);
+            if (!feedbackEl) return;
+
+            // Highlight chosen option
+            const optionsGroup = document.querySelectorAll(`#q${qNum}-options button`);
+            optionsGroup.forEach(btn => {
+                btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-red-500', 'bg-red-50');
+            });
+
+            const selectedBtn = document.querySelector(`.q-opt-${qNum}-${option}`);
+
+            feedbackEl.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-200', 'bg-red-50', 'text-red-900', 'border-red-200');
+            feedbackEl.classList.add('border');
+
+            if (isCorrect) {
+                if (selectedBtn) selectedBtn.classList.add('border-emerald-500', 'bg-emerald-50');
+                feedbackEl.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
+                feedbackEl.innerText = quizExplanations[qNum].correct;
+            } else {
+                if (selectedBtn) selectedBtn.classList.add('border-red-500', 'bg-red-50');
+                feedbackEl.classList.add('bg-red-50', 'text-red-900', 'border-red-200');
+                feedbackEl.innerText = quizExplanations[qNum].incorrect;
+            }
+        }
+
+        // Initialize default view on load
+        window.addEventListener('DOMContentLoaded', () => {
+            selectVendor('cisco');
+            initCanvas();
+        });
+    </script>
+</body>
+</html>
